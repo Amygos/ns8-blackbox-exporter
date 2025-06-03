@@ -7,8 +7,10 @@
 
 import json
 import sys
-import agent
+import os
 
-config = {}
+config = {
+        'path': os.environ['WEB_EXTERNAL_URL'],
+        }
 
 json.dump(config, fp=sys.stdout)
