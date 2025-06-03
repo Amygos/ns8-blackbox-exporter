@@ -16,16 +16,16 @@ EnvironmentFile=%S/state/environment
 WorkingDirectory=%S/state
 Restart=always
 ExecStartPre=/bin/rm -f %t/blackbox-exporter.pid %t/blackbox-exporter.ctr-id
-ExecStartPre=-runagent discover-smarthost
 ExecStart=/usr/bin/podman run \
     --detach \
     --conmon-pidfile=%t/blackbox-exporter.pid \
     --cidfile=%t/blackbox-exporter.ctr-id \
     --cgroups=no-conmon \
     --replace --name=%N \
-    --publish=127.0.0.1:${TCP_PORT}:8080 \
-    --env-file=smarthost.env \
-    ${ECHO_SERVER_IMAGE}
+    --publish=127.0.0.1:${TCP_PORT}:9115 \
+    ${BLACKBOX_EXPORTER_IMAGE} \
+    --config.file=/etc/blackbox_exporter/config.yml \
+    --web.external-url=${WEB_EXTERNAL_URL}
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/blackbox-exporter.ctr-id -t 10
 ExecStopPost=/usr/bin/podman rm --ignore -f --cidfile %t/blackbox-exporter.ctr-id
 PIDFile=%t/blackbox-exporter.pid
