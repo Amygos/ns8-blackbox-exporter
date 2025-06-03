@@ -3,6 +3,20 @@
     "title": "configure-module input",
     "$id": "http://schema.nethserver.org/blackbox-exporter/configure-module-input.json",
     "description": "Configure blackbox-exporter",
-    "examples": [],
-    "type": "object"
+    "examples": [
+        {
+            "path": "/blackbox-exporter"
+        }
+    ],
+    "type": "object",
+    "properties": {
+        "path": {
+            "type": "string",
+            "description": "The URL path to route requests to the blackbox-exporter service",
+            "pattern": "^/.*",
+            "minLength": 1
+        }
+    },
+    "required": ["path"],
+    "additionalProperties": false
 }
