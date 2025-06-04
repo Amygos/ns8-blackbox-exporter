@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+
+#
+# Copyright (C) 2023 Nethesis S.r.l.
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+import json
+import sys
+import yaml
+import os
+import agent
+
+request = json.load(sys.stdin)
+
+exporter_addr = agent.redis_connect(use_replica=True).hgetall(f"node/{os.environ['NODE_ID']}/vpn").get('ip_address')
+
+# Load existing config if it exists
+redis_client = agent.redis_connect(privileged=True)
+existing_config = redis_client.hget(f"module/{os.environ['MODULE_ID']}/metrics_targets", "targets")
+if  not existing_config:
+    existing_config = []
+
+# Convert existing config to grouped format for merging
+grouped = {}
+for item in existing_config:
+    if 'labels' in item and 'module' in item['labels']:
+        module = item['labels']['module']
+        targets = item.get('targets', [])
+        grouped[module] = targets
+
+# Add new entries to grouped data
+for item in request:
+    module = item['module']
+    target = item['target']
+
+    if module not in grouped:
+        grouped[module] = []
+    if target not in grouped[module]:
+        grouped[module].append(target)
+
+# Convert to desired YAML format
+output = []
+for module, targets in grouped.items():
+    output.append({
+        'labels': {
+            '__meta_discovery___param_module': module,
+            '__meta_discovery___metrics_path__': os.environ.get('WEB_EXTERNAL_URL', '') + "/probe",
+            '__meta_discovery___address__': exporter_addr + ":" + os.environ['TCP_PORT'],
+            'module_id': os.environ['MODULE_ID'],
+            },
+        'targets': targets
+    })
+
+# Write merged YAML to redis
+redis_client.hset(f"module/{os.environ['MODULE_ID']}/metrics_targets", "targets", yaml.dump(output))
